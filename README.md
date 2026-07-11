@@ -1,0 +1,77 @@
+# Del colegio a la universidad: inteligencia territorial para cerrar brechas de acceso y permanencia en la educación superior de Antioquia
+
+Proyecto para el concurso **[Datos al Ecosistema 2026 — IA para Colombia](https://www.datos.gov.co/stories/s/ddau-8cy9)** (nivel intermedio).
+
+Dos módulos de analítica sobre cinco conjuntos de datos integrados:
+
+* **Módulo A — Tipologías de municipios e índice de brecha (clustering).** ¿En qué
+  municipios de Antioquia es mayor la brecha de acceso a la educación superior?
+  KMeans sobre la matriz municipal + índice compuesto 0-100 + mapa interactivo.
+* **Módulo B — Riesgo académico (clasificación supervisada).** ¿Qué estudiantes
+  matriculados tienen mayor probabilidad de bajo rendimiento? Comparación de
+  regresión logística, Random Forest y LightGBM con validación cruzada,
+  interpretabilidad SHAP y scoring de alerta temprana.
+
+## Datos integrados (5 conjuntos, 4 de datos.gov.co)
+
+| # | Conjunto | Fuente | Obtención |
+|---|---|---|---|
+| 1 | Matriculados UdeA sedes regionales 2026-1 | Universidad de Antioquia | local (`data/raw/URABA 20261.xlsx`) |
+| 2 | [Beneficiarios de programas de acompañamiento](https://www.datos.gov.co/d/xk8x-i6kn) | datos.gov.co — Gobernación de Antioquia | local (`data/raw/Beneficiarios.xlsx`) |
+| 3 | [Población Antioquia censada 2018](https://www.datos.gov.co/d/evm3-92yw) | datos.gov.co — Gobernación de Antioquia / DANE | local (`data/raw/Población antioquia.xlsx`) |
+| 4 | [Resultados únicos Saber 11](https://www.datos.gov.co/d/kgxf-xxbe) | datos.gov.co — ICFES | API Socrata (`src/acquire.py`), filtro Antioquia 2018+ |
+| 5 | [DIVIPOLA códigos de municipios](https://www.datos.gov.co/d/gdxc-w37w) | datos.gov.co — DANE | API Socrata (`src/acquire.py`) |
+
+Llave de integración: **código DANE de municipio (5 dígitos)**, homologado contra
+DIVIPOLA con auditoría difusa de nombres (rapidfuzz). Cruce logrado: **100%** en
+todas las fuentes.
+
+## Reproducir
+
+```bash
+python -m venv .venv
+.venv\Scripts\pip install -r requirements.txt
+
+.venv\Scripts\python src/acquire.py     # descarga datasets 4 y 5 (API datos.gov.co)
+.venv\Scripts\python src/clean.py       # limpieza -> data/processed/*.parquet
+.venv\Scripts\python src/integrate.py   # matrices municipal y de estudiantes
+.venv\Scripts\python src/module_a.py    # clustering + índice de brecha + mapa
+.venv\Scripts\python src/module_b.py    # modelo de riesgo + SHAP + scoring
+```
+
+Los notebooks `notebooks/01…03` cuentan la historia completa (limpieza, módulo A,
+módulo B) ejecutando estas mismas funciones.
+
+## Resultados principales
+
+* **3 tipologías de municipios** (silhouette 0,32; estabilidad ARI 0,94):
+  cabeceras urbanas con Saber 11 alto · rurales con Saber 11 bajo y poca matrícula ·
+  municipios con sede regional UdeA y matrícula per cápita alta.
+* **Ranking de brecha**: Betulia, Murindó, Ituango, Angostura y Caicedo encabezan
+  la lista — alta ruralidad + bajo Saber 11 + baja matrícula + baja cobertura de
+  acompañamiento: candidatos a expandir Semestre Cero / Soñares / PIES.
+* **Modelo de riesgo académico** (regresión logística balanceada, mejor PR-AUC):
+  ROC-AUC 0,87 en held-out; el **decil superior captura 63% de los casos reales
+  (lift 6,2×)** — con capacidad para acompañar al 10% de la matrícula se concentra
+  dos tercios del riesgo.
+* Factores de riesgo (SHAP): antigüedad sin avance de nivel, facultad (Ingeniería,
+  Educación); ser mujer aparece como factor protector; el contexto municipal
+  (ruralidad, Saber 11 local) aporta señal moderada.
+
+## Estructura
+
+```
+├─ data/raw/         insumos originales + descargas de la API
+├─ data/processed/   parquet limpios y matrices analíticas
+├─ src/              pipeline reproducible (acquire, clean, integrate, module_a, module_b)
+├─ notebooks/        01 limpieza · 02 módulo A · 03 módulo B
+└─ outputs/          mapa_brechas.html, ranking_brechas.csv, scoring_estudiantes.csv,
+                     modelo_riesgo.pkl, figuras y métricas
+```
+
+## Nota ética
+
+El scoring de riesgo se diseñó para **priorizar acompañamiento**, nunca para
+restringir el acceso a servicios. Los datos de estudiantes están anonimizados y
+el modelo hereda desigualdades históricas del territorio que el informe hace
+explícitas en lugar de ocultar.

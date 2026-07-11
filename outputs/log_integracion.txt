@@ -1,0 +1,7 @@
+Matriz municipal: 125 municipios x 26 columnas
+URABA: 7811/8157 residen en Antioquia; 7811 (100.0% de los de Antioquia) cruzan con la matriz municipal
+Beneficiarios: 13778/13778 (100.0%) cruzan con la matriz municipal
+Saber11: 297962/297962 (100.0%) cruzan con la matriz municipal
+Municipios sin dato Saber11: 0
+Auditoría fuzzy censo vs DIVIPOLA: 125/125 nombres coinciden (score>=85)
+Matriz de estudiantes: 8157 filas x 23 columnas | sin contexto municipal: 346
