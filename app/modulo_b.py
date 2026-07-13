@@ -77,28 +77,13 @@ def render() -> None:
         )
         return
 
-    tab_resumen, tab_prediccion, tab_listado = st.tabs(
-        ["Resumen del modelo", "Predicción individual", "Estudiantes"]
+    # tab_resumen, tab_prediccion, tab_listado = st.tabs(
+    #     ["Resumen del modelo", "Predicción individual", "Estudiantes"]
+    # )
+    tab_prediccion, tab_resumen,  = st.tabs(
+        ["Predicción individual", "Resumen del modelo"]
     )
 
-    with tab_resumen:
-        tabla = cargar_csv("tabla_metricas.csv")
-        if tabla is not None:
-            st.subheader("Comparación de modelos (validación cruzada)")
-            st.dataframe(tabla, width="stretch")
-
-        col1, col2 = st.columns(2)
-        fig_comp = OUT / "fig_comparacion_modelos.png"
-        fig_shap = OUT / "fig_shap_summary.png"
-        if fig_comp.exists():
-            col1.image(str(fig_comp), caption="PR-AUC por modelo (CV 5-fold)")
-        if fig_shap.exists():
-            col2.image(str(fig_shap), caption="Impacto de cada variable (SHAP)")
-
-        imp = cargar_csv("importancia_shap.csv")
-        if imp is not None:
-            st.subheader("Importancia media |SHAP| por variable")
-            st.bar_chart(imp.set_index("variable").head(12))
 
     with tab_prediccion:
         st.caption(
@@ -203,31 +188,21 @@ def render() -> None:
                     import traceback
                     st.code(traceback.format_exc())
 
-    with tab_listado:
-        scoring = cargar_csv("scoring_estudiantes.csv")
-        if scoring is None:
-            st.info("No se encontró `scoring_estudiantes.csv`.")
-            return
+    with tab_resumen:
+        tabla = cargar_csv("tabla_metricas.csv")
+        if tabla is not None:
+            st.subheader("Comparación de modelos (validación cruzada)")
+            st.dataframe(tabla, width="stretch")
 
-        st.caption(
-            f"{len(scoring)} estudiantes con historia académica. "
-            "Datos anónimos: sin nombre ni identificador individual."
-        )
-        c1, c2 = st.columns(2)
-        facultades = ["(todas)"] + sorted(scoring["FACULTAD"].dropna().unique())
-        fac_sel = c1.selectbox("Facultad", facultades)
-        decil_min = c2.slider("Decil de riesgo mínimo", 1, 10, 8)
+        col1, col2 = st.columns(2)
+        fig_comp = OUT / "fig_comparacion_modelos.png"
+        fig_shap = OUT / "fig_shap_summary.png"
+        if fig_comp.exists():
+            col1.image(str(fig_comp), caption="PR-AUC por modelo (CV 5-fold)")
+        if fig_shap.exists():
+            col2.image(str(fig_shap), caption="Impacto de cada variable (SHAP)")
 
-        vista = scoring.copy()
-        if fac_sel != "(todas)":
-            vista = vista[vista["FACULTAD"] == fac_sel]
-        vista = vista[vista["DECIL_RIESGO"] >= decil_min]
-
-        st.dataframe(
-            vista.sort_values("PROB_RIESGO", ascending=False),
-            width="stretch", height=420,
-        )
-        st.download_button(
-            "Descargar CSV filtrado", vista.to_csv(index=False).encode("utf-8-sig"),
-            file_name="estudiantes_riesgo_filtrado.csv", mime="text/csv",
-        )
+        imp = cargar_csv("importancia_shap.csv")
+        if imp is not None:
+            st.subheader("Importancia media |SHAP| por variable")
+            st.bar_chart(imp.set_index("variable").head(12))
