@@ -1,1 +1,77 @@
-.venv
+# ==========================================
+# Entornos Virtuales de Python
+# ==========================================
+venv/
+env/
+.venv/
+env.bak/
+venv.bak/
+
+# ==========================================
+# Archivos Compilados y Caché de Python
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# ==========================================
+# Configuración y Secretos de Streamlit
+# ==========================================
+# NUNCA subas tus credenciales al repositorio
+.streamlit/secrets.toml
+
+# ==========================================
+# Variables de Entorno
+# ==========================================
+.env
+.env.local
+
+# ==========================================
+# Archivos de Empaquetado y Distribución
+# ==========================================
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ==========================================
+# Logs y Bases de Datos Locales
+# ==========================================
+*.log
+*.sqlite3
+*.db
+
+# ==========================================
+# Carpetas de datos de tu aplicación
+# ==========================================
+# (Descomenta estas líneas si tu app genera o recibe archivos)
+# /data/
+# /uploads/
+# /downloads/
+
+# ==========================================
+# Editores e IDEs
+# ==========================================
+.vscode/
+.idea/
+*.swp
+*.swo
+.Jupyter/
+
+# ==========================================
+# Archivos del Sistema Operativo
+# ==========================================
+.DS_Store
+Thumbs.db
