@@ -1,0 +1,27 @@
+FROM python:3.12-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgomp1 curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Evita segfaults de OpenBLAS/OpenMP: dentro de contenedores, la
+# autodetección de núcleos de numpy/scipy puede fallar (ve los cores del
+# host, no la cuota real del contenedor), y esto choca especialmente
+# cuando el código corre en un hilo no-principal -- exactamente como hace
+# Streamlit al ejecutar el script. Forzar 1 hilo elimina la causa.
+ENV OMP_NUM_THREADS=1
+ENV OPENBLAS_NUM_THREADS=1
+ENV MKL_NUM_THREADS=1
+ENV NUMEXPR_NUM_THREADS=1
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY app_simple.py test_modelo.py ./
+COPY outputs/ ./outputs/
+
+EXPOSE 8501
+ENTRYPOINT ["streamlit", "run", "app_simple.py", \
+            "--server.port=8501", "--server.address=0.0.0.0"]

@@ -7,21 +7,21 @@
 -r requirements.txt
 
 # --- usadas por src/module_a.py y src/module_b.py (entrenamiento) ---
-shap==0.52.0
-matplotlib==3.11.0
-plotly==6.9.0
-scipy==1.18.0
-pyarrow==25.0.0
+shap
+matplotlib
+plotly
+scipy
+pyarrow
 
 # --- usadas por src/clean.py, src/integrate.py, src/acquire.py ---
-ftfy==6.3.1
-Unidecode==1.4.0
-RapidFuzz==3.14.5
-openpyxl==3.1.5
-requests==2.34.2
+ftfy
+Unidecode
+RapidFuzz
+openpyxl
+requests
 
 # --- exploración / notebooks (opcional, coméntalas si no las usas) ---
-jupyter==1.1.1
-jupyterlab==4.6.1
-ipykernel==7.3.0
-seaborn==0.13.2
+jupyter
+jupyterlab
+ipykernel
+seaborn
