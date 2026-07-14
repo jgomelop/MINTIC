@@ -1,7 +1,4 @@
 # requirements-dev.txt — entorno LOCAL de desarrollo / entrenamiento.
-# Community Cloud NO lee este archivo (solo reconoce requirements.txt,
-# pyproject.toml, environment.yml o Pipfile), así que puede vivir aquí
-# sin afectar el despliegue.
 #
 # Instalar con: pip install -r requirements-dev.txt
 -r requirements.txt

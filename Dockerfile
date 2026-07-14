@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.12.13-slim
 
 # libgomp1: requerido en runtime por LightGBM
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -7,14 +7,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Evita segfaults de OpenBLAS/OpenMP: dentro de contenedores, la
-# autodetección de núcleos de numpy/scipy puede fallar, y esto choca
-# especialmente cuando el código corre en un hilo no-principal -- como
-# hace Streamlit al ejecutar el script de la app.
-ENV OMP_NUM_THREADS=1
-ENV OPENBLAS_NUM_THREADS=1
-ENV MKL_NUM_THREADS=1
-ENV NUMEXPR_NUM_THREADS=1
+# Evita que Streamlit quede esperando input interactivo (prompt de email/
+# telemetría) en el arranque dentro del contenedor.
+ENV STREAMLIT_SERVER_HEADLESS=true
+ENV STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

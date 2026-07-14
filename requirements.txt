@@ -1,21 +1,9 @@
-# requirements.txt de DESPLIEGUE (Streamlit Community Cloud)
-#
-# scikit-learn, lightgbm, numpy, pandas, joblib: versiones EXACTAS,
-# iguales a las del entorno donde se entrenó y serializó
-# outputs/modelo_riesgo.pkl (module_b.py). No usar rangos aquí: un
-# pickle de sklearn/LightGBM puede fallar o comportarse distinto si la
-# versión instalada difiere de la de entrenamiento.
-#
-# streamlit no participa del pickle, así que no necesita coincidir con
-# nada -- se deja con un mínimo razonable.
-#
-# matplotlib, shap y plotly NO van aquí: solo las usa el pipeline de
-# entrenamiento (src/module_b.py, src/module_a.py). La app solo
-# consume los PNG/HTML ya generados, no vuelve a graficar.
+# requirements.txt para PROD 
 
 streamlit
 pandas
 numpy
+scipy
 joblib
 scikit-learn
 lightgbm
