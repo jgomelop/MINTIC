@@ -26,21 +26,6 @@ Llave de integración: **código DANE de municipio (5 dígitos)**, homologado co
 DIVIPOLA con auditoría difusa de nombres (rapidfuzz). Cruce logrado: **100%** en
 todas las fuentes.
 
-## Reproducir
-
-```bash
-python -m venv .venv
-.venv\Scripts\pip install -r requirements.txt
-
-.venv\Scripts\python src/acquire.py     # descarga datasets 4 y 5 (API datos.gov.co)
-.venv\Scripts\python src/clean.py       # limpieza -> data/processed/*.parquet
-.venv\Scripts\python src/integrate.py   # matrices municipal y de estudiantes
-.venv\Scripts\python src/module_a.py    # clustering + índice de brecha + mapa
-.venv\Scripts\python src/module_b.py    # modelo de riesgo + SHAP + scoring
-```
-
-Los notebooks `notebooks/01…03` cuentan la historia completa (limpieza, módulo A,
-módulo B) ejecutando estas mismas funciones.
 
 ## Resultados principales
 
@@ -65,6 +50,74 @@ módulo B) ejecutando estas mismas funciones.
 - Los archivos ya generados en `outputs/` (`modelo_riesgo.pkl`,
   `tabla_metricas.csv`, etc.) — corre `python src/module_b.py` y
   `python src/module_a.py` si aún no existen
+
+## Crear el entorno virtual
+
+### Linux / Mac
+
+```bash
+# Fijar la versión de Python del proyecto (una sola vez, con pyenv instalado)
+pyenv install 3.12.13
+pyenv local 3.12.13
+
+# Crear y activar el entorno virtual
+python -m venv .venv
+source .venv/bin/activate
+
+# Instalar dependencias
+pip install --upgrade pip
+pip install -r requirements-dev.txt
+```
+
+### Windows (PowerShell)
+
+```powershell
+# Fijar la versión de Python del proyecto (una sola vez, con pyenv-win instalado)
+pyenv install 3.12.13
+pyenv local 3.12.13
+
+# Crear y activar el entorno virtual
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+
+# Instalar dependencias
+pip install --upgrade pip
+pip install -r requirements-dev.txt
+```
+Si PowerShell bloquea la activación por política de ejecución de scripts:
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+### Sin pyenv (cualquier SO)
+
+Si ya tienes Python 3.12 instalado en el sistema, puedes saltarte pyenv:
+
+```bash
+python3.12 -m venv .venv        # Linux/Mac
+python3.12 -m venv .venv        # Windows: usa "py -3.12 -m venv .venv"
+```
+
+y luego activa el entorno según tu sistema operativo (comandos de arriba).
+
+### Verificar que quedó bien
+
+```bash
+python --version    # debe mostrar Python 3.12.13
+```
+## Reproducción de Pipeline de Entrenamiento
+Los notebooks `notebooks/01…03` cuentan la historia completa (limpieza, módulo A,
+módulo B) ejecutando estas mismas funciones.
+
+```bash
+.venv\Scripts\python src/acquire.py     # descarga datasets 4 y 5 (API datos.gov.co)
+.venv\Scripts\python src/clean.py       # limpieza -> data/processed/*.parquet
+.venv\Scripts\python src/integrate.py   # matrices municipal y de estudiantes
+.venv\Scripts\python src/module_a.py    # clustering + índice de brecha + mapa
+.venv\Scripts\python src/module_b.py    # modelo de riesgo + SHAP + scoring
+```
+
 
 ## Opción A — Correr con contenedor (Podman/Docker)
  
