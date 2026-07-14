@@ -58,6 +58,72 @@ módulo B) ejecutando estas mismas funciones.
   Educación); ser mujer aparece como factor protector; el contexto municipal
   (ruralidad, Saber 11 local) aporta señal moderada.
 
+## Requisitos
+ 
+- Python **3.12.13** (recomendado vía [pyenv](https://github.com/pyenv/pyenv))
+- Podman o Docker, si vas a correr la app en contenedor
+- Los archivos ya generados en `outputs/` (`modelo_riesgo.pkl`,
+  `tabla_metricas.csv`, etc.) — corre `python src/module_b.py` y
+  `python src/module_a.py` si aún no existen
+
+## Opción A — Correr con contenedor (Podman/Docker)
+ 
+```bash
+# Construir la imagen
+podman build -t riesgo-academico:dev .
+ 
+# Correr el contenedor
+podman run -p 127.0.0.1:8501:8501 --name riesgo-academico riesgo-academico:dev
+```
+ 
+Abre **http://127.0.0.1:8501** en el navegador.
+ 
+> **Nota (Fedora/Linux):** usa `127.0.0.1` en vez de `localhost` en la URL —
+> en algunos sistemas `localhost` resuelve primero a IPv6 y el mapeo de
+> puertos de Podman solo aplica sobre IPv4, lo que da un error de conexión
+> aunque el contenedor esté corriendo bien.
+ 
+Detener y limpiar:
+```bash
+podman stop riesgo-academico
+podman rm riesgo-academico
+```
+ 
+Con Docker, los mismos comandos funcionan reemplazando `podman` por `docker`.
+ 
+## Opción B — Correr localmente con Streamlit (sin contenedor)
+ 
+```bash
+# Fijar la versión de Python del proyecto (una sola vez)
+pyenv install 3.12.13   # si no la tienes instalada
+pyenv local 3.12.13
+ 
+# Crear y activar el entorno virtual
+python -m venv .venv
+source .venv/bin/activate
+ 
+# Instalar dependencias (producción + entrenamiento + notebooks)
+pip install --upgrade pip
+pip install -r requirements-dev.txt
+ 
+# Correr la app
+streamlit run app/main.py
+```
+ 
+Abre **http://localhost:8501**.
+ 
+## Reentrenar el modelo
+ 
+```bash
+python src/module_b.py   # regenera outputs/modelo_riesgo.pkl y métricas
+python src/module_a.py   # regenera ranking, mapa y figuras del módulo A
+```
+ 
+Si reentrenas con una versión de `scikit-learn`/`numpy`/`scipy` distinta a
+la actual, actualiza esas versiones exactas en `requirements.txt` antes de
+reconstruir la imagen — un `.pkl` deserializado con una versión distinta a
+la de entrenamiento puede fallar o comportarse de forma inesperada.
+
 ## Estructura
 
 ```
@@ -65,8 +131,12 @@ módulo B) ejecutando estas mismas funciones.
 ├─ data/processed/   parquet limpios y matrices analíticas
 ├─ src/              pipeline reproducible (acquire, clean, integrate, module_a, module_b)
 ├─ notebooks/        01 limpieza · 02 módulo A · 03 módulo B
-└─ outputs/          mapa_brechas.html, ranking_brechas.csv, scoring_estudiantes.csv,
-                     modelo_riesgo.pkl, figuras y métricas
+├─ outputs/          mapa_brechas.html, ranking_brechas.csv, scoring_estudiantes.csv,
+│                    modelo_riesgo.pkl, figuras y métricas
+├─ app/              main.py, modulo_a.py, modulo_b.py (app Streamlit)
+├─ Dockerfile
+├─ requirements.txt       dependencias de producción (app)
+└─ requirements-dev.txt   producción + entrenamiento + notebooks
 ```
 
 ## Nota ética
