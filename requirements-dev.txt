@@ -22,3 +22,6 @@ jupyter
 jupyterlab
 ipykernel
 seaborn
+
+# --- generación de la presentación de sustentación (scripts/generar_presentacion.py) ---
+python-pptx

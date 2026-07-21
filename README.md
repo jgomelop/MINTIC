@@ -10,7 +10,9 @@ Dos módulos de analítica sobre cinco conjuntos de datos integrados:
 * **Módulo B — Riesgo académico (clasificación supervisada).** ¿Qué estudiantes
   matriculados tienen mayor probabilidad de bajo rendimiento? Comparación de
   regresión logística, Random Forest y LightGBM con validación cruzada,
-  interpretabilidad SHAP y scoring de alerta temprana.
+  interpretabilidad SHAP y scoring de alerta temprana. Incluye una **calculadora
+  interactiva** en la app que estima el riesgo de un estudiante a partir de sus
+  datos de entrada (ver [La aplicación interactiva](#la-aplicación-interactiva)).
 
 ## Datos integrados (5 conjuntos, 4 de datos.gov.co)
 
@@ -118,6 +120,36 @@ módulo B) ejecutando estas mismas funciones.
 .venv\Scripts\python src/module_b.py    # modelo de riesgo + SHAP + scoring
 ```
 
+
+## La aplicación interactiva
+
+La app de Streamlit (`app/main.py`) tiene dos módulos en la barra lateral. El
+**Módulo B** incluye la pestaña **«Predicción individual»**: una *calculadora de
+riesgo académico* que estima la probabilidad de bajo rendimiento de un estudiante
+(hipotético) a partir de los valores que se ingresan en un formulario.
+
+- **Entradas — perfil académico.** Sexo, sede, facultad, tipo de aceptación,
+  naturaleza del colegio, nivel de pregrado, edad, estrato (con casilla «no
+  conoce / no aplica»), antigüedad en semestres, créditos del último semestre y
+  si vive fuera de Antioquia; más el **municipio de residencia**.
+- **Autocompletado del contexto territorial.** Al elegir el municipio, el % rural,
+  el promedio Saber 11 municipal y la tasa de acompañamiento se rellenan solos
+  desde `outputs/ranking_brechas.csv` (salida del Módulo A), para no pedir datos
+  que el usuario no conoce.
+- **Opciones seguras.** Los campos categóricos solo ofrecen las categorías que el
+  `OneHotEncoder` vio durante el entrenamiento, así el formulario nunca propone un
+  valor que el modelo no conoce.
+- **Salida.** Al pulsar **«Calcular riesgo»**, el pipeline serializado
+  (`outputs/modelo_riesgo.pkl`) devuelve la probabilidad de riesgo, mostrada como
+  porcentaje. Cuando es ≥ 50 % se despliega una **alerta**: es un apoyo
+  estadístico, **no un diagnóstico individual**, y debe leerse junto con el
+  acompañamiento humano de bienestar (ver la [Nota ética](#nota-ética)).
+
+La pestaña **«Resumen del modelo»** complementa con la tabla de métricas, la
+comparación de modelos y la importancia SHAP de cada variable.
+
+Para verla, levanta la app con cualquiera de las dos opciones de abajo y abre el
+**Módulo B** en la barra lateral.
 
 ## Opción A — Correr con contenedor (Podman/Docker)
  
