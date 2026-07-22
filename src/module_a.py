@@ -20,6 +20,8 @@ Uso:  python src/module_a.py
 """
 from __future__ import annotations
 
+import json
+import math
 import sys
 from pathlib import Path
 
@@ -28,7 +30,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import plotly.express as px
+import plotly.graph_objects as go
+from plotly.colors import sample_colorscale
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.metrics import adjusted_rand_score, silhouette_score
@@ -36,8 +39,16 @@ from sklearn.preprocessing import StandardScaler
 
 ROOT = Path(__file__).resolve().parents[1]
 PROC = ROOT / "data" / "processed"
+RAW = ROOT / "data" / "raw"
 OUT = ROOT / "outputs"
 SEED = 42
+
+# GeoJSON de municipios (DANE MGN 2018, repo público caticoa3/colombia_mapa).
+# Se filtra a Antioquia (depto 05) y se cachea; la clave de unión con la matriz
+# es MPIO_CCNCT == COD_DANE (5 dígitos).
+GEOJSON_URL = ("https://raw.githubusercontent.com/caticoa3/colombia_mapa/"
+               "master/co_2018_MGN_MPIO_POLITICO.geojson")
+GEOJSON_LOCAL = RAW / "antioquia_municipios.geojson"
 
 # ------------------------------------------------ paleta (dataviz validada)
 SURFACE = "#fcfcfb"
@@ -212,30 +223,100 @@ def indice_brecha(m: pd.DataFrame) -> pd.Series:
     return (sum(partes) / len(partes) * 100).round(1)
 
 
+def cargar_geojson_antioquia() -> dict[str, dict]:
+    """Geometrías de los municipios de Antioquia por código DANE (5 díg.).
+
+    Usa la caché local si existe; si no, descarga el MGN 2018 nacional, lo filtra
+    a Antioquia (depto 05) y guarda una versión reducida (solo la clave de unión).
+    Así las re-ejecuciones no dependen de la red y el HTML del mapa queda
+    autocontenido (no pide teselas ni topojson en el navegador).
+    """
+    if GEOJSON_LOCAL.exists():
+        fc = json.loads(GEOJSON_LOCAL.read_text(encoding="utf-8"))
+    else:
+        import requests  # dependencia de adquisición (ver src/acquire.py)
+        print("  descargando GeoJSON de municipios (DANE MGN 2018)...")
+        resp = requests.get(GEOJSON_URL, timeout=120)
+        resp.raise_for_status()
+        feats = [f for f in resp.json()["features"]
+                 if f["properties"].get("DPTO_CCDGO") == "05"]
+        for f in feats:  # conservar solo la clave de unión adelgaza el HTML
+            f["properties"] = {"MPIO_CCNCT": f["properties"]["MPIO_CCNCT"]}
+        fc = {"type": "FeatureCollection", "features": feats}
+        RAW.mkdir(parents=True, exist_ok=True)
+        GEOJSON_LOCAL.write_text(json.dumps(fc), encoding="utf-8")
+        print(f"  Antioquia: {len(feats)} municipios -> {GEOJSON_LOCAL.name}")
+    return {f["properties"]["MPIO_CCNCT"]: f["geometry"] for f in fc["features"]}
+
+
+def _anillos(geom: dict):
+    """Anillos exteriores (lon, lat) de una geometría Polygon/MultiPolygon."""
+    polys = [geom["coordinates"]] if geom["type"] == "Polygon" else geom["coordinates"]
+    for poly in polys:
+        ext = poly[0]  # se ignoran los huecos (los municipios rara vez tienen)
+        yield [c[0] for c in ext], [c[1] for c in ext]
+
+
 def mapa(m: pd.DataFrame, nombres: dict[int, str]) -> None:
-    d = m.dropna(subset=["latitud", "longitud"]).copy()
+    """Coroplético de brechas por municipio, dibujado como polígonos SVG.
+
+    Se evitan `scatter_map`/`choropleth_map` (teselas MapLibre) y el backend geo
+    de plotly (topojson desde cdn.plot.ly): ambos requieren red en el navegador y
+    dejaban el mapa en blanco al incrustarlo en el iframe de Streamlit. Aquí cada
+    municipio es un polígono cartesiano relleno según su índice de brecha, de modo
+    que el HTML es autocontenido y se ve siempre (con o sin internet).
+    """
+    geo = cargar_geojson_antioquia()
+    d = m.copy()
+    d["COD_DANE"] = d["COD_DANE"].astype(str).str.zfill(5)
     d["Municipio"] = d["NOMBRE_MUNI"].str.title()
-    d["Tipología"] = d["CLUSTER"].map(lambda c: f"C{c + 1} · {nombres[c]}")
-    fig = px.scatter_map(
-        d, lat="latitud", lon="longitud",
-        color="INDICE_BRECHA", size="POB_15_19",
-        color_continuous_scale=SEQ_BLUE, size_max=34, zoom=6.7,
-        map_style="carto-positron",
-        hover_name="Municipio",
-        hover_data={"latitud": False, "longitud": False, "POB_15_19": ":,",
-                    "INDICE_BRECHA": ":.1f", "TASA_MATRIC_VIVE": ":.1f",
-                    "TASA_BENEF": ":.1f", "PROM_GLOBAL_SABER": ":.0f",
-                    "Tipología": True},
-        labels={"INDICE_BRECHA": "Índice de brecha",
-                "POB_15_19": "Población 15-19",
-                "TASA_MATRIC_VIVE": "Matrícula UdeA /1.000",
-                "TASA_BENEF": "Acompañamiento /1.000",
-                "PROM_GLOBAL_SABER": "Saber 11 global"},
-        title=("Brechas de acceso a educación superior en Antioquia — "
-               "tamaño: población joven; color: índice de brecha (0-100)"),
-    )
-    fig.update_layout(font=dict(family="Segoe UI", color=INK),
-                      paper_bgcolor=SURFACE, margin=dict(l=10, r=10, t=60, b=10))
+    filas = {r.COD_DANE: r for r in d.itertuples()}
+
+    vmin, vmax = float(d["INDICE_BRECHA"].min()), float(d["INDICE_BRECHA"].max())
+    span = vmax - vmin or 1.0
+
+    fig = go.Figure()
+    lats_all: list[float] = []
+    for cod, geom in geo.items():
+        r = filas.get(cod)
+        if r is None:
+            continue
+        xs: list = []
+        ys: list = []
+        for lons, lats in _anillos(geom):
+            xs += lons + [None]
+            ys += lats + [None]
+            lats_all += lats
+        color = sample_colorscale(SEQ_BLUE, [(r.INDICE_BRECHA - vmin) / span])[0]
+        tip = (f"<b>{r.Municipio}</b><br>"
+               f"Índice de brecha: {r.INDICE_BRECHA:.1f}<br>"
+               f"Tipología: C{r.CLUSTER + 1} · {nombres[r.CLUSTER]}<br>"
+               f"Población 15-19: {r.POB_15_19:,.0f}<br>"
+               f"Matrícula UdeA /1.000: {r.TASA_MATRIC_VIVE:.1f}<br>"
+               f"Acompañamiento /1.000: {r.TASA_BENEF:.1f}<br>"
+               f"Saber 11 global: {r.PROM_GLOBAL_SABER:.0f}<extra></extra>")
+        fig.add_trace(go.Scatter(
+            x=xs, y=ys, mode="lines", fill="toself", fillcolor=color,
+            line=dict(color="#ffffff", width=0.6), hoveron="fills",
+            hovertemplate=tip, name="", showlegend=False))
+
+    # leyenda de color: traza de marcadores invisible con la escala continua
+    fig.add_trace(go.Scatter(
+        x=[None], y=[None], mode="markers", showlegend=False, hoverinfo="skip",
+        marker=dict(colorscale=SEQ_BLUE, cmin=vmin, cmax=vmax, color=[vmin],
+                    showscale=True,
+                    colorbar=dict(title=dict(text="Índice<br>de brecha", side="right"),
+                                  thickness=14, len=0.85))))
+
+    lat0 = sum(lats_all) / len(lats_all)
+    fig.update_xaxes(visible=False)
+    fig.update_yaxes(visible=False, scaleanchor="x",
+                     scaleratio=1.0 / math.cos(math.radians(lat0)))
+    fig.update_layout(
+        title=dict(text=("Brechas de acceso a educación superior en Antioquia — "
+                         "color: índice de brecha (0-100)")),
+        font=dict(family="Segoe UI", color=INK), paper_bgcolor=SURFACE,
+        plot_bgcolor=SURFACE, height=560, margin=dict(l=10, r=10, t=60, b=10))
     fig.write_html(OUT / "mapa_brechas.html", include_plotlyjs=True)
 
 

@@ -13,6 +13,8 @@ st.set_page_config(
     layout="wide",
 )
 
+st.title("Del colegio a la universidad")
+
 st.sidebar.title("Navegación")
 seccion = st.sidebar.radio(
     "Módulo",

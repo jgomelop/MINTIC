@@ -14,6 +14,10 @@ Dos módulos de analítica sobre cinco conjuntos de datos integrados:
   interactiva** en la app que estima el riesgo de un estudiante a partir de sus
   datos de entrada (ver [La aplicación interactiva](#la-aplicación-interactiva)).
 
+> Para la sustentación metodológica completa (por qué cada técnica, cómo se entrenó
+> y validó, y cómo interpretar cada indicador), ver la
+> **[memoria técnica](docs/memoria_tecnica.md)**.
+
 ## Datos integrados (5 conjuntos, 4 de datos.gov.co)
 
 | # | Conjunto | Fuente | Obtención |

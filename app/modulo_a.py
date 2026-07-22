@@ -35,7 +35,7 @@ def render() -> None:
 
     if mapa.exists():
         st.subheader("Mapa de brechas de acceso a educación superior")
-        components.html(mapa.read_text(encoding="utf-8"), height=560,
+        components.html(mapa.read_text(encoding="utf-8"), height=580,
                         scrolling=False)
 
     col1, col2 = st.columns(2)
