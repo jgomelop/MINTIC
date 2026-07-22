@@ -6,7 +6,6 @@ from pathlib import Path
 
 import pandas as pd
 import streamlit as st
-import streamlit.components.v1 as components
 
 OUT = Path(__file__).resolve().parents[1] / "outputs"
 
@@ -23,20 +22,14 @@ def render() -> None:
     st.title("Módulo A · Tipologías municipales y brechas de acceso")
 
     ranking = cargar_csv("ranking_brechas.csv")
-    mapa = OUT / "mapa_brechas.html"
 
-    if ranking is None and not mapa.exists():
+    if ranking is None:
         st.info(
             "Este módulo todavía no tiene outputs generados. Corre "
             "`python src/module_a.py` y los resultados aparecerán aquí "
             "automáticamente — no requiere cambios de código."
         )
         return
-
-    if mapa.exists():
-        st.subheader("Mapa de brechas de acceso a educación superior")
-        components.html(mapa.read_text(encoding="utf-8"), height=560,
-                        scrolling=False)
 
     col1, col2 = st.columns(2)
     fig_pca = OUT / "fig_pca_clusters.png"
